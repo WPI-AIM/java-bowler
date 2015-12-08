@@ -23,6 +23,8 @@ import com.neuronrobotics.sdk.util.ThreadUtil;
  * The Class ThreadedTimeout.
  */
 public class ThreadedTimeout {
+	
+	/** The timer thread. */
 	private static timerThreadClass timerThread;
 	static{
 		timerThread = new timerThreadClass();
@@ -35,13 +37,13 @@ public class ThreadedTimeout {
 	
 	/** The timed out. */
 	private IthreadedTimoutListener listener;
+	
+	/** The start time. */
 	private long startTime=0;
 	
 	
 	/**
 	 * Instantiates a new threaded timeout.
-	 *
-	 * @param time the time
 	 */
 	public ThreadedTimeout() {
 		
@@ -56,25 +58,47 @@ public class ThreadedTimeout {
 		return System.currentTimeMillis()>(getStartTime()+getAmountOfTimeForTimerToRun());
 	}
 	
+	/**
+	 * Initialize.
+	 *
+	 * @param sleepTime the sleep time
+	 * @param listener the listener
+	 */
 	public void initialize(long sleepTime,IthreadedTimoutListener listener) {
-		//stop();
 		setStartTime(System.currentTimeMillis());
 		this.time = (sleepTime);
 		setTimeoutListener(listener);
-		//timerThread.addTimer(this);
+		timerThread.addTimer(this);
 	}
 
+	/**
+	 * Gets the amount of time for timer to run.
+	 *
+	 * @return the amount of time for timer to run
+	 */
 	public long getAmountOfTimeForTimerToRun() {
 		return time;
 	}
 
+	/**
+	 * Sets the timeout listener.
+	 *
+	 * @param listener the new timeout listener
+	 */
 	private void setTimeoutListener(IthreadedTimoutListener listener) {
 		this.listener = listener;
 	}
 
 	
+	/**
+	 * The Class timerThreadClass.
+	 */
 	private static class timerThreadClass extends Thread{
+		
+		/** The timers. */
 		private ArrayList<ThreadedTimeout> timers = new ArrayList<ThreadedTimeout>();
+		
+		/** The to remove. */
 		private ArrayList<ThreadedTimeout> toRemove = new ArrayList<ThreadedTimeout>();
 		/* (non-Javadoc)
 		 * @see java.lang.Thread#run()
@@ -82,12 +106,12 @@ public class ThreadedTimeout {
 		public void run(){
 			setName("Bowler Platform Threaded timeout");
 			while(true){
-				if(getTimers().size()>0){
+				if(timers.size()>0){
 					toRemove.clear();
 					
-					for(int i=0;i<getTimers().size();i++){
+					for(int i=0;i<timers.size();i++){
 						try{
-							ThreadedTimeout t = getTimers().get(i);
+							ThreadedTimeout t = timers.get(i);
 							if(t!=null){
 								if(t.isTimedOut()){
 									if(t.listener!=null){
@@ -106,41 +130,67 @@ public class ThreadedTimeout {
 						removeTimer(toRemove.get(i));
 					}
 				}
-				ThreadUtil.wait(0,10);
+				ThreadUtil.wait(1);
 			}
 		}
+		
+		/**
+		 * Adds the timer.
+		 *
+		 * @param time the time
+		 */
 		public void addTimer(ThreadedTimeout time){
 			try{
-				if(!getTimers().contains(time))
-					getTimers().add(time);
+				synchronized(timers){
+					if(!timers.contains(time))
+						timers.add(time);
+				}
 			}catch (Exception e){
 				e.printStackTrace();
 			}
 		}
+		
+		/**
+		 * Removes the timer.
+		 *
+		 * @param time the time
+		 */
 		public void removeTimer(ThreadedTimeout time){
 			try{
-				if(getTimers().contains(time))
-					getTimers().remove(time);
+				synchronized(timers){
+					if(timers.contains(time))
+						timers.remove(time);
+				}
 			}catch (Exception e){
 				e.printStackTrace();
 			}
 			
 		}
-		public ArrayList<ThreadedTimeout> getTimers() {
-			return timers;
-		}
 	}
 
 
+	/**
+	 * Stop.
+	 */
 	public void stop() {
 		
 		timerThread.removeTimer(this);
 	}
 
+	/**
+	 * Gets the start time.
+	 *
+	 * @return the start time
+	 */
 	public long getStartTime() {
 		return startTime;
 	}
 
+	/**
+	 * Sets the start time.
+	 *
+	 * @param startTime the new start time
+	 */
 	public void setStartTime(long startTime) {
 		this.startTime = startTime;
 	}

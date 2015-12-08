@@ -33,48 +33,71 @@ import com.neuronrobotics.sdk.common.ByteList;
 import com.neuronrobotics.sdk.common.Log;
 import com.neuronrobotics.sdk.common.MACAddress;
 
+// TODO: Auto-generated Javadoc
 /**
- * 
+ * The Class UDPBowlerConnection.
  */
 public class UDPBowlerConnection extends BowlerAbstractConnection{
+	
+	/** The sleep time. */
 	private int sleepTime = 5000;
 
+	/** The port. */
 	private int port = 1865;
 
 	
+	/** The IP address set. */
 	private InetAddress IPAddressSet=null;
+	
+	/** The addrs. */
 	private ArrayList<InetAddress>  addrs=null;
+	
+	/** The udp sock. */
 	//private ByteList internalReceiveBuffer= new ByteList();
 	private DatagramSocket udpSock = null;
 	
 	/**
-	 * 
+	 * Instantiates a new UDP bowler connection.
 	 */
 	public UDPBowlerConnection(){
 		init();
 	}
+	
+	/**
+	 * Instantiates a new UDP bowler connection.
+	 *
+	 * @param set the set
+	 */
 	public UDPBowlerConnection(InetAddress set){
 		init();
 		setAddress(set);
 	}
+	
+	/**
+	 * Instantiates a new UDP bowler connection.
+	 *
+	 * @param set the set
+	 * @param port the port
+	 */
 	public UDPBowlerConnection(InetAddress set,int port){
 		this.port=port;
 		init();
 		setAddress(set);
 	}
+	
 	/**
-	 * 
-	 * 
-	 * @param set
+	 * Sets the address.
+	 *
+	 * @param set the new address
 	 */
 	public void setAddress(InetAddress set){
 		IPAddressSet=set;
     }
 	
 	/**
-	 * 
-	 * 
-	 * @param port
+	 * Instantiates a new UDP bowler connection.
+	 *
+	 * @param port the port
 	 */
 	public UDPBowlerConnection(int port){
 		this.port=port;
@@ -86,6 +109,7 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 	 * Gets the data ins.
 	 *
 	 * @return the data ins
+	 * @throws NullPointerException the null pointer exception
 	 */
 	@Override
 	public DataInputStream getDataIns() throws NullPointerException{
@@ -97,6 +121,7 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 	 * Gets the data outs.
 	 *
 	 * @return the data outs
+	 * @throws NullPointerException the null pointer exception
 	 */
 	@Override
 	public DataOutputStream getDataOuts() throws NullPointerException{
@@ -121,13 +146,23 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 		
 	}
 	
+	/** The receive data. */
+	byte[] receiveData=new byte[4096];
+	
+	/** The receive packet. */
+	DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+	
+	/* (non-Javadoc)
+	 * @see com.neuronrobotics.sdk.common.BowlerAbstractConnection#loadPacketFromPhy(com.neuronrobotics.sdk.common.ByteList)
+	 */
 	@Override
 	public BowlerDatagram loadPacketFromPhy(ByteList bytesToPacketBuffer) throws NullPointerException, IOException{
-		byte[] receiveData=new byte[4096];
 		
-		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-		//Log.info("Waiting for UDP packet");
+		long start = System.currentTimeMillis();
+		Log.info("Waiting for UDP packet");
 		udpSock.setSoTimeout(1);// Timeout the socket after 1 ms
+		//System.err.println("Timeout set "+(System.currentTimeMillis()-start));
+		start = System.currentTimeMillis();
 		try{
 			udpSock.receive(receivePacket);
 			
@@ -139,7 +174,8 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 			ex.printStackTrace();
 			return null;
 		}
-		
+		//System.err.println("Recv "+(System.currentTimeMillis()-start));
+		start = System.currentTimeMillis();
 		Log.info("Got UDP packet");
 		if(addrs== null)
 			addrs=new ArrayList<InetAddress>();
@@ -150,13 +186,19 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 		for (int i=0;i<receivePacket.getLength();i++){
 			bytesToPacketBuffer.add(data[i]);
 		}
-	
-		return BowlerDatagramFactory.build(bytesToPacketBuffer);
+		//System.err.println("copy "+(System.currentTimeMillis()-start));
+		start = System.currentTimeMillis();
+		BowlerDatagram bd= BowlerDatagramFactory.build(bytesToPacketBuffer);
+		//System.err.println("build "+(System.currentTimeMillis()-start));
+		return bd;
 	}
 	
 	
 
 	
+	/**
+	 * Inits the.
+	 */
 	private void init(){
 		setSynchronusPacketTimeoutTime(sleepTime);
 		setChunkSize(5210);
@@ -211,6 +253,12 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 	/* (non-Javadoc)
 	 * @see com.neuronrobotics.sdk.common.BowlerAbstractConnection#reconnect()
 	 */
+	/**
+	 * Reconnect.
+	 *
+	 * @return true, if successful
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
 	//@Override
 	public boolean reconnect() throws IOException {
 		disconnect();
@@ -230,9 +278,9 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 	
 	
 	/**
-	 * 
-	 * 
-	 * @return
+	 * Gets the all addresses.
+	 *
+	 * @return the all addresses
 	 */
 	public ArrayList<InetAddress>  getAllAddresses(){
 		if(addrs== null){
@@ -255,6 +303,11 @@ public class UDPBowlerConnection extends BowlerAbstractConnection{
 		return addrs;
 	}
 
+	/**
+	 * Sets the address.
+	 *
+	 * @param address the new address
+	 */
 	public void setAddress(String address) {
 		for (InetAddress in: getAllAddresses()) {
 			if(in.getHostAddress().contains(address)) {

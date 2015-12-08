@@ -25,13 +25,12 @@ public class MACAddress implements ISendable {
 	public static final String BROADCAST = "00:00:00:00:00:00";
 	
 	/** The address. */
-	private byte [] address = new byte[6];
+	private byte [] address = new byte[]{0,0,0,0,0,0};
 	
 	/**
 	 * Instantiates a new mAC address.
 	 */
 	public MACAddress(){
-		init(BROADCAST);
 	}
 	/**
 	 * Construct a new MAC address object with a given MAC address represented as a string of 6 bytes in hex deliminated by semicolons.
@@ -80,6 +79,12 @@ public class MACAddress implements ISendable {
 		return equals((MACAddress) o);
 	}
 	
+	/**
+	 * Equals.
+	 *
+	 * @param addr the addr
+	 * @return true, if successful
+	 */
 	public boolean equals(MACAddress addr){
 		for(int i=0; i<6; i++) {
 			if(addr.address[i] != address[i]) {
@@ -101,6 +106,12 @@ public class MACAddress implements ISendable {
 		return rtn.toUpperCase();
 	}
 	
+	/**
+	 * Gets the hex byte string.
+	 *
+	 * @param index the index
+	 * @return the hex byte string
+	 */
 	public String getHexByteString(int index){
 		return String.format("%02x", address[index]);
 	}
@@ -122,6 +133,9 @@ public class MACAddress implements ISendable {
 		return address;
 	}
 	
+	/**
+	 * Increment.
+	 */
 	public void increment(){
 		if(address[5]<255) {
 			address[5]++;
@@ -141,6 +155,12 @@ public class MACAddress implements ISendable {
 			}
 		}
 	}
+	
+	/**
+	 * Sets the values.
+	 *
+	 * @param address2 the new values
+	 */
 	public void setValues(MACAddress address2) {
 		//System.out.println("Setting new values: "+address2);
 		for(int i=0; i<6; i++) {
