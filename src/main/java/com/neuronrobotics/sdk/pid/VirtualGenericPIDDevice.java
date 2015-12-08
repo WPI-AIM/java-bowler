@@ -258,6 +258,7 @@ public class VirtualGenericPIDDevice extends GenericPIDDevice{
 			startTime=System.currentTimeMillis();
 			setPoint=setpoint;
 			startPoint = ticks;
+			System.out.println("CHAN=" + getChan() + " Start Point=" + startPoint + " Set Point=" + setPoint + "Ticks=" + ticks + " Duration=" + duration); 
 			
 			setPause(false);
 			//System.out.println("Setting Setpoint Ticks to: "+setPoint);
@@ -292,6 +293,7 @@ public class VirtualGenericPIDDevice extends GenericPIDDevice{
 			return chan;
 		}
 		private void interpolate() {
+
 			double back;
 			double diffTime;
 			if(duration > 0 ){
