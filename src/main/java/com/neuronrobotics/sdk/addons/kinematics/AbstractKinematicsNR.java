@@ -58,10 +58,10 @@ public abstract class AbstractKinematicsNR extends NonBowlerDevice implements IP
 	private ArrayList<MobileBase> mobileBases = new ArrayList<MobileBase>();
 	
 	/** The dh engine. */
-	private String [] dhEngine =new String[]{"bcb4760a449190206170","DefaultDhSolver.groovy"}; 
+	private String [] dhEngine =new String[]{"https://gist.github.com/bcb4760a449190206170.git","DefaultDhSolver.groovy"}; 
 	
 	/** The cad engine. */
-	private String [] cadEngine =new String[]{"bcb4760a449190206170","ThreeDPrintCad.groovy"};  
+	private String [] cadEngine =new String[]{"https://gist.github.com/bcb4760a449190206170.git","ThreeDPrintCad.groovy"};  
 
 
 	/** The current joint space positions. */
@@ -241,8 +241,8 @@ public abstract class AbstractKinematicsNR extends NonBowlerDevice implements IP
 		
 		
 		NodeList nodListofLinks = doc.getChildNodes();
-		setCadEngine(getGistCodes( doc,"cadEngine"));
-		setDhEngine(getGistCodes( doc,"kinematics"));
+		setGitCadEngine(getGitCodes( doc,"cadEngine"));
+		setGitDhEngine(getGitCodes( doc,"kinematics"));
 		for (int i = 0; i < nodListofLinks .getLength(); i++) {			
 		    Node linkNode = nodListofLinks.item(i);
 		    
@@ -276,9 +276,9 @@ public abstract class AbstractKinematicsNR extends NonBowlerDevice implements IP
 						}
 				    }else{
 					    if (nNode.getNodeType() == Node.ELEMENT_NODE && nNode.getNodeName().contentEquals("slaveLink")) {
-					    	System.out.println("Slave link found: ");
+					    	//System.out.println("Slave link found: ");
 					    	LinkConfiguration jc =new LinkConfiguration((Element) nNode);
-					    	System.out.println(jc);
+					    	//System.out.println(jc);
 					    	newLinkConf.getSlaveLinks().add(jc);
 					    }
 				    }
@@ -763,7 +763,7 @@ public abstract class AbstractKinematicsNR extends NonBowlerDevice implements IP
 			
 			@Override
 			public void run() {
-				TransformFactory.getTransform(forwardOffset(new TransformNR()), root);
+				TransformFactory.nrToAffine(forwardOffset(new TransformNR()), root);
 			}
 		});
 	}
@@ -803,7 +803,7 @@ public abstract class AbstractKinematicsNR extends NonBowlerDevice implements IP
 			
 			@Override
 			public void run() {
-				TransformFactory.getTransform(forwardOffset(new TransformNR()), root);
+				TransformFactory.nrToAffine(forwardOffset(new TransformNR()), root);
 			}
 		});
 	}
@@ -814,7 +814,7 @@ public abstract class AbstractKinematicsNR extends NonBowlerDevice implements IP
 	 * @param t the t
 	 * @return the transform nr
 	 */
-	protected TransformNR inverseOffset(TransformNR t){
+	public TransformNR inverseOffset(TransformNR t){
 		//System.out.println("RobotToFiducialTransform "+getRobotToFiducialTransform());
 		//System.out.println("FiducialToRASTransform "+getFiducialToRASTransform());		
 		Matrix rtz = getFiducialToGlobalTransform().getMatrixTransform().inverse();
@@ -832,7 +832,7 @@ public abstract class AbstractKinematicsNR extends NonBowlerDevice implements IP
 	 * @param t the t
 	 * @return the transform nr
 	 */
-	protected TransformNR forwardOffset(TransformNR t){
+	public TransformNR forwardOffset(TransformNR t){
 		Matrix btt = getRobotToFiducialTransform().getMatrixTransform();
 		Matrix ftb = getFiducialToGlobalTransform().getMatrixTransform();
 		Matrix current = t.getMatrixTransform();
@@ -1217,7 +1217,7 @@ public ArrayList<PIDConfiguration> getAxisPidConfiguration() {
 	 *
 	 * @return the dh engine
 	 */
-	public String [] getDhEngine() {
+	public String [] getGitDhEngine() {
 		return dhEngine;
 	}
 
@@ -1226,7 +1226,7 @@ public ArrayList<PIDConfiguration> getAxisPidConfiguration() {
 	 *
 	 * @param dhEngine the new dh engine
 	 */
-	public void setDhEngine(String [] dhEngine) {
+	public void setGitDhEngine(String [] dhEngine) {
 		if(dhEngine!=null && dhEngine[0]!=null &&dhEngine[1]!=null)
 			this.dhEngine = dhEngine;
 	}
@@ -1236,7 +1236,7 @@ public ArrayList<PIDConfiguration> getAxisPidConfiguration() {
 	 *
 	 * @return the cad engine
 	 */
-	public String [] getCadEngine() {
+	public String [] getGitCadEngine() {
 		return cadEngine;
 	}
 
@@ -1245,7 +1245,7 @@ public ArrayList<PIDConfiguration> getAxisPidConfiguration() {
 	 *
 	 * @param cadEngine the new cad engine
 	 */
-	public void setCadEngine(String [] cadEngine) {
+	public void setGitCadEngine(String [] cadEngine) {
 		if(cadEngine!=null&& cadEngine[0]!=null &&cadEngine[1]!=null)
 		this.cadEngine = cadEngine;
 	}
@@ -1280,7 +1280,7 @@ public ArrayList<PIDConfiguration> getAxisPidConfiguration() {
 	 * @param tag the tag
 	 * @return the gist codes
 	 */
-	protected String [] getGistCodes(Element doc,String tag){
+	protected String [] getGitCodes(Element doc,String tag){
 		String [] content =new String[2];
 		try{
 			NodeList nodListofLinks = doc.getChildNodes();
@@ -1288,7 +1288,18 @@ public ArrayList<PIDConfiguration> getAxisPidConfiguration() {
 			    Node linkNode = nodListofLinks.item(i);
 			    if (linkNode.getNodeType() == Node.ELEMENT_NODE&& linkNode.getNodeName().contentEquals(tag)) {
 			    	Element e = (Element) linkNode;
-			    	content[0]=getCode( e,"gist");
+			    	try{
+				    	if(getCode( e,"gist")!=null)
+				    		content[0]="https://gist.github.com/"+getCode( e,"gist")+".git";
+			    	}catch(Exception ex){
+			    		
+			    	}
+			    	try{
+				    	if(getCode( e,"git")!=null)
+				    		content[0]=getCode( e,"git");
+		    		}catch(Exception ex){
+			    		
+			    	}
 			    	content[1]=getCode( e,"file");
 			    }
 			}

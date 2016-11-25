@@ -21,8 +21,8 @@ public class TransformFactory {
 	 * @param z the z
 	 * @return the transform
 	 */
-	public static Affine getTransform(double x, double y, double z){
-		return getTransform(new TransformNR(x, y, z, new RotationNR()));
+	public static Affine newAffine(double x, double y, double z){
+		return nrToAffine(new TransformNR(x, y, z, new RotationNR()));
 	}
 	
 	/**
@@ -31,9 +31,48 @@ public class TransformFactory {
 	 * @param input the input
 	 * @return the transform
 	 */
-	public static Affine getTransform(TransformNR input){
+	public static Affine nrToAffine(TransformNR input){
 		Affine rotations =new Affine();
-		return getTransform( input , rotations);
+		return nrToAffine( input , rotations);
+	}
+	
+	/**
+	 * Gets the transform.
+	 *
+	 * @param input the input
+	 * @return the transform
+	 */
+	public static TransformNR affineToNr(Affine input){
+		TransformNR rotations =new TransformNR();
+		return affineToNr( rotations,input  );
+	}
+	/**
+	 * Gets the transform.
+	 *
+	 * @param outputValue the input
+	 * @param rotations the rotations
+	 * @return the transform
+	 */
+	public static TransformNR affineToNr(TransformNR outputValue ,Affine rotations){
+		double[][] poseRot = outputValue
+				.getRotationMatrixArray();
+		
+		poseRot[0][0]=rotations.getMxx();
+		poseRot[0][1]=rotations.getMxy();
+		poseRot[0][2]=rotations.getMxz();
+		poseRot[1][0]=rotations.getMyx();
+		poseRot[1][1]=rotations.getMyy();
+		poseRot[1][2]=rotations.getMyz();
+		poseRot[2][0]=rotations.getMzx();
+		poseRot[2][1]=rotations.getMzy();
+		poseRot[2][2]=rotations.getMzz();
+		
+		outputValue.setX(rotations.getTx());
+		outputValue.setY(rotations.getTy());
+		outputValue.setZ(rotations.getTz());
+		
+		outputValue.setRotation(new RotationNR(poseRot));
+		return outputValue;
 	}
 	
 	/**
@@ -43,7 +82,7 @@ public class TransformFactory {
 	 * @param rotations the rotations
 	 * @return the transform
 	 */
-	public static Affine getTransform(TransformNR input ,Affine rotations){
+	public static Affine nrToAffine(TransformNR input ,Affine rotations){
 		double[][] poseRot = input
 				.getRotationMatrixArray();
 		

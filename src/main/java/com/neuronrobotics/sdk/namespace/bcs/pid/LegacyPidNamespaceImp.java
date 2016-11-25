@@ -39,7 +39,7 @@ public class LegacyPidNamespaceImp extends AbstractPidNamespaceImp {
 	 * @see com.neuronrobotics.sdk.namespace.bcs.pid.AbstractPidNamespaceImp#onAsyncResponse(com.neuronrobotics.sdk.common.BowlerDatagram)
 	 */
 	public void onAsyncResponse(BowlerDatagram data) {
-		//Log.debug("\nPID ASYNC<<"+data);
+		Log.debug("\nPID ASYNC<<<<<<<<<<<<<<<<<<<<<<<"+data);
 		if(data.getRPC().contains("_pid")){
 			
 			PIDEvent e =new PIDEvent(data);

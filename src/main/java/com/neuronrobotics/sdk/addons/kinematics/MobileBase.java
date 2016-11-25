@@ -33,20 +33,17 @@ public class MobileBase extends AbstractKinematicsNR{
 	/** The drivable. */
 	private final ArrayList<DHParameterKinematics> drivable=new ArrayList<DHParameterKinematics>();
 	
-	/** The drive type. */
-	private DrivingType driveType = DrivingType.NONE;
-	
 	/** The walking drive engine. */
 	private IDriveEngine walkingDriveEngine = new WalkingDriveEngine();
 	
-	/** The wheeled drive engine. */
-	private IDriveEngine wheeledDriveEngine = new WheeledDriveEngine();
-	
 	/** The walking engine. */
-	private String [] walkingEngine =new String[]{"bcb4760a449190206170","WalkingDriveEngine.groovy"}; 
+	private String [] walkingEngine =new String[]{"https://gist.github.com/bcb4760a449190206170.git","WalkingDriveEngine.groovy"}; 
 	
 	/** The self source. */
 	private String [] selfSource =new String[2];
+	
+	private double mass=0.5;// KG
+	private TransformNR centerOfMassFromCentroid=new TransformNR();
 	
 	/**
 	 * Instantiates a new mobile base.
@@ -64,7 +61,7 @@ public class MobileBase extends AbstractKinematicsNR{
 		NodeList nodListofLinks = doc.getElementsByTagName("root");
 		
 		if(nodListofLinks.getLength()!=1 ){
-			System.out.println("Found "+nodListofLinks.getLength());
+			//System.out.println("Found "+nodListofLinks.getLength());
 			throw new RuntimeException("one mobile base is needed per level");
 		}	
 		NodeList rootNode  = nodListofLinks.item(0).getChildNodes();
@@ -118,17 +115,33 @@ public class MobileBase extends AbstractKinematicsNR{
 	private void loadConfigs(Element doc){
 		setScriptingName(XmlFactory.getTagValue("name",doc));
 		
-		setCadEngine(getGistCodes( doc,"cadEngine"));
-		setWalkingEngine(getGistCodes( doc,"driveEngine"));
+		setGitCadEngine(getGitCodes( doc,"cadEngine"));
+		setGitWalkingEngine(getGitCodes( doc,"driveEngine"));
 		loadLimb(doc,"leg",legs);
 		loadLimb(doc,"drivable",drivable);
 		loadLimb(doc,"steerable",steerable);
 		loadLimb(doc,"appendage",appendages);
-		try{
-			setDriveType(DrivingType.fromString(XmlFactory.getTagValue("driveType",doc)));
-		}catch(Exception ex ){
-			setDriveType(DrivingType.NONE);
-		}
+    	try{
+    		setMassKg(Double.parseDouble(XmlFactory.getTagValue("mass",doc)));
+    	}catch (Exception e){
+    		
+    	}
+    	
+    	try{
+    		if (doc.getNodeType() == Node.ELEMENT_NODE && doc.getNodeName().contentEquals("centerOfMassFromCentroid")) {
+		    	Element cntr = (Element)doc;	    	    
+		    	setCenterOfMassFromCentroid(new TransformNR(	Double.parseDouble(XmlFactory.getTagValue("x",cntr)),
+							    			Double.parseDouble(XmlFactory.getTagValue("y",cntr)),
+							    			Double.parseDouble(XmlFactory.getTagValue("z",cntr)), 
+							    			new RotationNR(new double[]{	Double.parseDouble(XmlFactory.getTagValue("rotw",cntr)),
+							    							Double.parseDouble(XmlFactory.getTagValue("rotx",cntr)),
+							    							Double.parseDouble(XmlFactory.getTagValue("roty",cntr)),
+							    							Double.parseDouble(XmlFactory.getTagValue("rotz",cntr))})));	 
+		    }
+    	}catch (Exception e){
+    		
+    	}
+
 	}
 	
 	/**
@@ -174,7 +187,7 @@ public class MobileBase extends AbstractKinematicsNR{
 		    	if(kin==null){
 		    		kin= new DHParameterKinematics(e);
 		    		
-		    		DeviceManager.addConnection(kin, name);
+		    		//DeviceManager.addConnection(kin, name);
 		    	}
 		    	kin.setScriptingName(name);
 		    	list.add(kin);
@@ -293,16 +306,16 @@ public class MobileBase extends AbstractKinematicsNR{
 		TransformNR location = getFiducialToGlobalTransform();
 		setGlobalToFiducialTransform(new TransformNR());
 		String xml = "<mobilebase>\n";
-		xml+="\n<driveType>"+getDriveType()+"</driveType>\n";
+
 		
 		xml+="\t<cadEngine>\n";
-		xml+="\t\t<gist>"+getCadEngine()[0]+"</gist>\n";
-		xml+="\t\t<file>"+getCadEngine()[1]+"</file>\n";
+		xml+="\t\t<git>"+getGitCadEngine()[0]+"</git>\n";
+		xml+="\t\t<file>"+getGitCadEngine()[1]+"</file>\n";
 		xml+="\t</cadEngine>\n";
 		
 		xml+="\t<driveEngine>\n";
-		xml+="\t\t<gist>"+getWalkingEngine()[0]+"</gist>\n";
-		xml+="\t\t<file>"+getWalkingEngine()[1]+"</file>\n";
+		xml+="\t\t<git>"+getGitWalkingEngine()[0]+"</git>\n";
+		xml+="\t\t<file>"+getGitWalkingEngine()[1]+"</file>\n";
 		xml+="\t</driveEngine>\n";
 		
 		xml+="\n<name>"+getScriptingName()+"</name>\n";
@@ -338,7 +351,9 @@ public class MobileBase extends AbstractKinematicsNR{
 		
 		xml+="\n<baseToZframe>\n";
 		xml+=getRobotToFiducialTransform().getXml();
-		xml+="\n</baseToZframe>\n";
+		xml+="\n</baseToZframe>\n"+
+		"\t<mass>"+getMassKg()+"</mass>\n"+
+		"\t<centerOfMassFromCentroid>"+getCenterOfMassFromCentroid().getXml()+"</centerOfMassFromCentroid>\n";
 		xml+="\n</mobilebase>\n";
 		setGlobalToFiducialTransform(location);
 		return xml;
@@ -369,6 +384,7 @@ public class MobileBase extends AbstractKinematicsNR{
 	 * @return the walking drive engine
 	 */
 	private IDriveEngine getWalkingDriveEngine() {
+
 		return walkingDriveEngine;
 	}
 
@@ -381,42 +397,8 @@ public class MobileBase extends AbstractKinematicsNR{
 		this.walkingDriveEngine = walkingDriveEngine;
 	}
 
-	/**
-	 * Gets the wheeled drive engine.
-	 *
-	 * @return the wheeled drive engine
-	 */
-	private IDriveEngine getWheeledDriveEngine() {
-		return wheeledDriveEngine;
-	}
 
-	/**
-	 * Sets the wheeled drive engine.
-	 *
-	 * @param wheeledDriveEngine the new wheeled drive engine
-	 */
-	public void setWheeledDriveEngine(IDriveEngine wheeledDriveEngine) {
-		this.wheeledDriveEngine = wheeledDriveEngine;
-	}
 
-	/**
-	 * Gets the drive type.
-	 *
-	 * @return the drive type
-	 */
-	public DrivingType getDriveType() {
-		return driveType;
-	}
-
-	/**
-	 * Sets the drive type.
-	 *
-	 * @param driveType the new drive type
-	 */
-	public void setDriveType(DrivingType driveType) {
-		this.driveType = driveType;
-	}
-	
 	/**
 	 * Drive arc.
 	 *
@@ -424,26 +406,7 @@ public class MobileBase extends AbstractKinematicsNR{
 	 * @param seconds the seconds
 	 */
 	public void DriveArc( TransformNR newPose, double seconds) {
-		// TODO Auto-generated method stub
-		switch(driveType){
-		case DRIVING:
-			getWheeledDriveEngine().DriveArc(this,newPose, seconds);
-			break;
-		case NONE:
-			try {
-				//do a simple coordinated motion task
-				for(DHParameterKinematics dh:appendages){
-					dh.setDesiredTaskSpaceTransform(newPose,  seconds);
-				}
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			break;
-		case WALKING:
-			getWalkingDriveEngine().DriveArc(this,newPose, seconds);
-			break;
-		}
+		getWalkingDriveEngine().DriveArc(this,newPose, seconds);
 		updatePositions();
 	}
 
@@ -454,17 +417,8 @@ public class MobileBase extends AbstractKinematicsNR{
 	 * @param cmPerSecond the cm per second
 	 */
 	public void DriveVelocityStraight(double cmPerSecond) {
-		// TODO Auto-generated method stub
-		switch(driveType){
-		case DRIVING:
-			getWheeledDriveEngine().DriveVelocityStraight(this,cmPerSecond);
-			break;
-		case NONE:
-			break;
-		case WALKING:
-			getWalkingDriveEngine().DriveVelocityStraight(this,cmPerSecond);
-			break;
-		}
+		getWalkingDriveEngine().DriveVelocityStraight(this,cmPerSecond);
+
 		updatePositions();
 	}
 
@@ -476,17 +430,8 @@ public class MobileBase extends AbstractKinematicsNR{
 	 * @param cmRadius the cm radius
 	 */
 	public void DriveVelocityArc(double degreesPerSecond, double cmRadius) {
-		// TODO Auto-generated method stub
-		switch(driveType){
-		case DRIVING:
-			getWheeledDriveEngine().DriveVelocityArc(this,degreesPerSecond, cmRadius);
-			break;
-		case NONE:
-			break;
-		case WALKING:
-			getWalkingDriveEngine().DriveVelocityArc(this,degreesPerSecond, cmRadius);
-			break;
-		}
+		getWalkingDriveEngine().DriveVelocityArc(this,degreesPerSecond, cmRadius);
+	
 		updatePositions();
 	}
 	
@@ -515,7 +460,7 @@ public class MobileBase extends AbstractKinematicsNR{
 	 *
 	 * @return the walking engine
 	 */
-	public String [] getWalkingEngine() {
+	public String [] getGitWalkingEngine() {
 		return walkingEngine;
 	}
 
@@ -524,7 +469,7 @@ public class MobileBase extends AbstractKinematicsNR{
 	 *
 	 * @param walkingEngine the new walking engine
 	 */
-	public void setWalkingEngine(String [] walkingEngine) {
+	public void setGitWalkingEngine(String [] walkingEngine) {
 		if(walkingEngine!=null && walkingEngine[0]!=null &&walkingEngine[1]!=null)
 			this.walkingEngine = walkingEngine;
 	}
@@ -534,7 +479,7 @@ public class MobileBase extends AbstractKinematicsNR{
 	 *
 	 * @return the self source
 	 */
-	public String [] getSelfSource() {
+	public String [] getGitSelfSource() {
 		return selfSource;
 	}
 
@@ -543,8 +488,25 @@ public class MobileBase extends AbstractKinematicsNR{
 	 *
 	 * @param selfSource the new self source
 	 */
-	public void setSelfSource(String [] selfSource) {
+	public void setGitSelfSource(String [] selfSource) {
 		this.selfSource = selfSource;
+	}
+
+	public double getMassKg() {
+		return mass;
+	}
+	public void setMassKg(double mass) {
+		this.mass = mass;
+	}
+	public TransformNR getCenterOfMassFromCentroid() {
+		return centerOfMassFromCentroid;
+	}
+	public void setCenterOfMassFromCentroid(TransformNR centerOfMassFromCentroid) {
+		this.centerOfMassFromCentroid = centerOfMassFromCentroid;
+	}
+
+	public void setFiducialToGlobalTransform(TransformNR globe) {
+		setGlobalToFiducialTransform(globe);
 	}
 
 }

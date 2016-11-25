@@ -99,9 +99,9 @@ task sourcesJar(type: Jar) {
 	classifier = 'sources'
 	from sourceSets.main.allSource
 }
-signing {
-	sign configurations.archives
-}
+/*
+
+*/
 artifacts {
 	archives javadocJar
 	archives  sourcesJar
@@ -128,7 +128,10 @@ artifacts {
 //		console.printf "\nThanks.\n\n"
 //	}
 //}
-
+/*
+signing {
+	sign configurations.archives
+}
 uploadArchives {
 	repositories {
 	  mavenDeployer {
@@ -173,3 +176,4 @@ uploadArchives {
 	  }
 	}
   }
+  */

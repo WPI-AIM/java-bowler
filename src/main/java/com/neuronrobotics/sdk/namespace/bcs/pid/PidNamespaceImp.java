@@ -10,6 +10,7 @@ import com.neuronrobotics.sdk.pid.PIDCommandException;
 import com.neuronrobotics.sdk.pid.PIDConfiguration;
 import com.neuronrobotics.sdk.pid.PIDEvent;
 import com.neuronrobotics.sdk.pid.PIDLimitEvent;
+import com.neuronrobotics.sdk.pid.PIDLimitEventType;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -216,7 +217,15 @@ public class PidNamespaceImp extends AbstractPidNamespaceImp implements IExtende
 			}	
 		}
 		if(data.getRPC().contains("pidl")){
-			firePIDLimitEvent(new PIDLimitEvent(data));
+			//we need to fire more than one limit events as these are masked events
+			int group = data.getData().getByte(0);
+			byte limEventMasked = data.getData().getBytes(1, 1)[0];
+			int value = ByteList.convertToInt(data.getData().getBytes(2, 4),true);
+			long time= ByteList.convertToInt(data.getData().getBytes(6, 4),false);
+
+			for( PIDLimitEventType l:PIDLimitEventType.getAllLimitMasks(limEventMasked)){
+				firePIDLimitEvent(new PIDLimitEvent(group,value,l,time));
+			}
 		}
 	}
 

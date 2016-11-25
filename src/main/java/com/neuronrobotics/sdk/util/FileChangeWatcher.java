@@ -36,10 +36,7 @@ import java.io.IOException;
 import java.nio.file.*;
 
 import static java.nio.file.StandardWatchEventKinds.*;
-import static java.nio.file.LinkOption.*;
-
 import java.nio.file.attribute.*;
-import java.io.*;
 import java.util.*;
 
 // TODO: Auto-generated Javadoc
@@ -195,28 +192,26 @@ public class FileChangeWatcher extends Thread {
 					continue;
 				}
 
+				
 				// Context for directory entry event is the file name of entry
 				WatchEvent<Path> ev = cast(event);
 				Path name = ev.context();
 				Path child = dir.resolve(name);
-
-				// print out event
-				//System.out.format("%s: %s\n", event.kind().name(), child);
-				for(IFileChangeListener l: listeners){
-					l.onFileChange(child.toFile(), event);
-				}
-
-				// if directory is created, and watching recursively, then
-				// register it and its sub-directories
-				if (recursive && (kind == ENTRY_CREATE)) {
-					try {
-						if (Files.isDirectory(child, NOFOLLOW_LINKS)) {
-							registerAll(child);
-						}
-					} catch (IOException x) {
-						// ignore to keep sample readbale
+				try {
+					if (!child.toFile().getCanonicalPath().equals(fileToWatch.getCanonicalPath())) {
+						continue;
 					}
+					// print out event
+					//System.out.format("%s: %s\n", event.kind().name(), child);
+					for(int i=0;i<listeners.size();i++){
+						listeners.get(i).onFileChange(child.toFile(), event);
+						Thread.sleep(50);// pad out the events to avoid file box overwrites
+					}
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
+
 			}
 
 			// reset key and remove from set if directory no longer accessible
@@ -229,6 +224,12 @@ public class FileChangeWatcher extends Thread {
 					break;
 				}
 			}
+		}
+		try {
+			watcher.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
